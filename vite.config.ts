@@ -1,44 +1,21 @@
-/* Vite config for building the frontend react app: https://vite.dev/config/ */
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
+import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: '::',
+    host: "::",
     port: 8080,
-  },
-  experimental: {
-    enableNativePlugin: true
-  },
-  build: {
-    outDir: mode === 'development' ? 'dev-dist' : 'dist',
-    minify: mode !== 'development',
-    sourcemap: mode === 'development',
-    rolldownOptions: {
-      onwarn(warning, warn) {
-        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
-          return
-        }
-        warn(warning)
-      },
+    hmr: {
+      overlay: false,
     },
   },
-  plugins: [react()],
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(mode ?? process.env.NODE_ENV ?? 'production'),
-  },
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
-    alias: [
-      {
-        find: '@',
-        replacement: path.resolve(__dirname, './src'),
-      },
-      {
-        find: /zod\/v4\/core/,
-        replacement: path.resolve(__dirname, 'node_modules', 'zod', 'v4', 'core'),
-      }
-    ],
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
-}))
+}));

@@ -1,131 +1,73 @@
-# Projeto Criado com o Skip
+# Welcome to your Lovable project
 
-Este projeto foi criado de ponta a ponta com o [Skip](https://goskip.dev).
+## Project info
 
-## 🚀 Stack Tecnológica
+**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-- **React 19** - Biblioteca JavaScript para construção de interfaces
-- **Vite** - Build tool extremamente rápida
-- **TypeScript** - Superset tipado do JavaScript
-- **Shadcn UI** - Componentes reutilizáveis e acessíveis
-- **Tailwind CSS** - Framework CSS utility-first
-- **React Router** - Roteamento para aplicações React
-- **React Hook Form** - Gerenciamento de formulários performático
-- **Zod** - Validação de schemas TypeScript-first
-- **Recharts** - Biblioteca de gráficos para React
+## How can I edit this code?
 
-## 📋 Pré-requisitos
+There are several ways of editing your application.
 
-- Node.js 18+
-- npm
+**Use Lovable**
 
-## 🔧 Instalação
+Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
 
-```bash
-npm install
-```
+Changes made via Lovable will be committed automatically to this repo.
 
-## 💻 Scripts Disponíveis
+**Use your preferred IDE**
 
-### Desenvolvimento
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-```bash
-# Iniciar servidor de desenvolvimento
-npm start
-# ou
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-Abre a aplicação em modo de desenvolvimento em [http://localhost:5173](http://localhost:5173).
+**Edit a file directly in GitHub**
 
-### Build
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-```bash
-# Build para produção
-npm run build
+**Use GitHub Codespaces**
 
-# Build para desenvolvimento
-npm run build:dev
-```
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-Gera os arquivos otimizados para produção na pasta `dist/`.
+## What technologies are used for this project?
 
-### Preview
+This project is built with:
 
-```bash
-# Visualizar build de produção localmente
-npm run preview
-```
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-Permite visualizar a build de produção localmente antes do deploy.
+## How can I deploy this project?
 
-### Linting e Formatação
+Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
-```bash
-# Executar linter
-npm run lint
+## Can I connect a custom domain to my Lovable project?
 
-# Executar linter e corrigir problemas automaticamente
-npm run lint:fix
+Yes, you can!
 
-# Formatar código com Oxfmt
-npm run format
-```
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-## 📁 Estrutura do Projeto
-
-```
-.
-├── src/              # Código fonte da aplicação
-├── public/           # Arquivos estáticos
-├── dist/             # Build de produção (gerado)
-├── node_modules/     # Dependências (gerado)
-└── package.json      # Configurações e dependências do projeto
-```
-
-## 🎨 Componentes UI
-
-Este template inclui uma biblioteca completa de componentes Shadcn UI baseados em Radix UI:
-
-- Accordion
-- Alert Dialog
-- Avatar
-- Button
-- Checkbox
-- Dialog
-- Dropdown Menu
-- Form
-- Input
-- Label
-- Select
-- Switch
-- Tabs
-- Toast
-- Tooltip
-- E muito mais...
-
-## 📝 Ferramentas de Qualidade de Código
-
-- **TypeScript**: Tipagem estática
-- **Oxlint**: Linter extremamente rápido
-- **Oxfmt**: Formatação automática de código
-
-## 🔄 Workflow de Desenvolvimento
-
-1. Instale as dependências: `npm install`
-2. Inicie o servidor de desenvolvimento: `npm start`
-3. Faça suas alterações
-4. Verifique o código: `npm run lint`
-5. Formate o código: `npm run format`
-6. Crie a build: `npm run build`
-7. Visualize a build: `npm run preview`
-
-## 📦 Build e Deploy
-
-Para criar uma build otimizada para produção:
-
-```bash
-npm run build
-```
-
-Os arquivos otimizados serão gerados na pasta `dist/` e estarão prontos para deploy.
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

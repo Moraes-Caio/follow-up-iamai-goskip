@@ -1,0 +1,1 @@
+ALTER TABLE public.procedures ADD COLUMN cleanup_minutes integer DEFAULT 15;
