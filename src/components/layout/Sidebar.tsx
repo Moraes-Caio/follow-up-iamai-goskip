@@ -42,12 +42,12 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', permission: 'viewDashboard' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', alwaysVisible: true },
   { icon: Users, label: 'Pacientes', path: '/pacientes', permission: 'viewPatients' },
   { icon: Calendar, label: 'Consultas', path: '/consultas', permission: 'viewAppointments' },
   { icon: Bell, label: 'Lembretes', path: '/lembretes', permission: 'viewReminders' },
   { icon: MessageSquare, label: 'Mensagens', path: '/mensagens', permission: 'viewMessages' },
-  { icon: BellRing, label: 'Notificações', path: '/notificacoes', permission: 'viewNotifications' },
+  { icon: BellRing, label: 'Notificações', path: '/notificacoes', alwaysVisible: true },
   { icon: Briefcase, label: 'Equipe & Procedimentos', path: '/equipe', permission: 'viewTeam' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes', alwaysVisible: true },
   { icon: HelpCircle, label: 'Suporte', path: '/suporte', alwaysVisible: true },
