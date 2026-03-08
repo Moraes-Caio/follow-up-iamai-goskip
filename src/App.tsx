@@ -160,15 +160,20 @@ const AppRoutes = () => (
       <Route path="/esqueci-senha" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
       <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
       <Route path="/member-setup" element={<MemberSetupRoute><MemberSetup /></MemberSetupRoute>} />
-      <Route path="/dashboard" element={<PrivateRoute><PermissionRoute permission="viewDashboard"><Dashboard /></PermissionRoute></PrivateRoute>} />
+
+      {/* Base routes — always accessible for any authenticated member */}
+      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+      <Route path="/notificacoes" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+      <Route path="/configuracoes" element={<PrivateRoute><Settings /></PrivateRoute>} />
+      <Route path="/suporte" element={<PrivateRoute><Support /></PrivateRoute>} />
+
+      {/* Permission-gated routes */}
       <Route path="/pacientes" element={<PrivateRoute><PermissionRoute permission="viewPatients"><Patients /></PermissionRoute></PrivateRoute>} />
       <Route path="/consultas" element={<PrivateRoute><PermissionRoute permission="viewAppointments"><Appointments /></PermissionRoute></PrivateRoute>} />
       <Route path="/lembretes" element={<PrivateRoute><PermissionRoute permission="viewReminders"><Reminders /></PermissionRoute></PrivateRoute>} />
       <Route path="/mensagens" element={<PrivateRoute><PermissionRoute permission="viewMessages"><Messages /></PermissionRoute></PrivateRoute>} />
-      <Route path="/notificacoes" element={<PrivateRoute><PermissionRoute permission="viewNotifications"><Notifications /></PermissionRoute></PrivateRoute>} />
       <Route path="/equipe" element={<PrivateRoute><PermissionRoute permission="viewTeam"><Team /></PermissionRoute></PrivateRoute>} />
-      <Route path="/configuracoes" element={<PrivateRoute><Settings /></PrivateRoute>} />
-      <Route path="/suporte" element={<PrivateRoute><Support /></PrivateRoute>} />
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   </>
