@@ -8,7 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   format,
   startOfMonth,
@@ -325,25 +324,23 @@ export function ProfessionalDatePicker({
                       className="absolute top-full left-0 mt-1 w-[120px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
                       style={{ zIndex: 10000 }}
                     >
-                      <ScrollArea className="h-[200px]">
-                        <div className="p-1">
-                          {availableMonths.map(({ name, index }) => (
-                            <div
-                              key={index}
-                              className={cn(
-                                "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                                index === getMonth(currentMonth) && "bg-accent text-accent-foreground font-medium"
-                              )}
-                              onClick={() => {
-                                handleMonthChange(index.toString());
-                                setIsMonthOpen(false);
-                              }}
-                            >
-                              {name}
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
+                      <div className="max-h-[250px] overflow-y-auto overflow-x-hidden p-1">
+                        {availableMonths.map(({ name, index }) => (
+                          <div
+                            key={index}
+                            className={cn(
+                              "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                              index === getMonth(currentMonth) && "bg-accent text-accent-foreground font-medium"
+                            )}
+                            onClick={() => {
+                              handleMonthChange(index.toString());
+                              setIsMonthOpen(false);
+                            }}
+                          >
+                            {name}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -363,25 +360,23 @@ export function ProfessionalDatePicker({
                       className="absolute top-full left-0 mt-1 w-[90px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
                       style={{ zIndex: 10000 }}
                     >
-                      <ScrollArea className="h-[200px]">
-                        <div className="p-1">
-                          {years.map((year) => (
-                            <div
-                              key={year}
-                              className={cn(
-                                "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                                year === getYear(currentMonth) && "bg-accent text-accent-foreground font-medium"
-                              )}
-                              onClick={() => {
-                                handleYearChange(year.toString());
-                                setIsYearOpen(false);
-                              }}
-                            >
-                              {year}
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
+                      <div className="max-h-[250px] overflow-y-auto overflow-x-hidden p-1">
+                        {years.map((year) => (
+                          <div
+                            key={year}
+                            className={cn(
+                              "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                              year === getYear(currentMonth) && "bg-accent text-accent-foreground font-medium"
+                            )}
+                            onClick={() => {
+                              handleYearChange(year.toString());
+                              setIsYearOpen(false);
+                            }}
+                          >
+                            {year}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
