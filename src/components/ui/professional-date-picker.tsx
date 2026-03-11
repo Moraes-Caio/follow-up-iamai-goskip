@@ -255,16 +255,15 @@ export function ProfessionalDatePicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-auto p-0 pointer-events-auto bg-popover rounded-lg border shadow-2xl"
+          className={cn(
+            "w-auto p-0 pointer-events-auto bg-popover rounded-lg border shadow-2xl overflow-visible",
+            // AC: Centered, fixed-position modal overriding Radix positioning
+            "!fixed !top-1/2 !left-1/2 ![transform:translate(-50%,-50%)] !z-[9999]"
+          )}
           style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 9999,
+            // AC: constrained to max-width and max-height
             maxWidth: '90vw',
             maxHeight: '90vh',
-            overflow: 'visible'
           }}
           onOpenAutoFocus={(e) => {
             e.preventDefault();
@@ -323,8 +322,7 @@ export function ProfessionalDatePicker({
                   </button>
                   {isMonthOpen && (
                     <div
-                      className="absolute top-full left-0 mt-1 w-[120px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
-                      style={{ zIndex: 10000 }}
+                      className="absolute top-full left-0 mt-1 w-[120px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95 !z-[10000]"
                     >
                       <ScrollArea className="h-[200px]">
                         <div className="p-1">
@@ -361,8 +359,7 @@ export function ProfessionalDatePicker({
                   </button>
                   {isYearOpen && (
                     <div
-                      className="absolute top-full left-0 mt-1 w-[90px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
-                      style={{ zIndex: 10000 }}
+                      className="absolute top-full left-0 mt-1 w-[90px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95 !z-[10000]"
                     >
                       <ScrollArea className="h-[200px]">
                         <div className="p-1">
