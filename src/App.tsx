@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Appointments from "./pages/Appointments";
@@ -52,8 +53,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
     }
     let cancelled = false;
     (async () => {
-      const sbClient = (await import("@/integrations/supabase/client")).supabase;
-      let { data } = await sbClient
+      let { data } = await supabase
         .from('team_members')
         .select('id, user_id, is_owner, password_changed')
         .eq('user_id', user.id)
@@ -61,7 +61,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
         .limit(1);
       if (cancelled) return;
       if (!data || data.length === 0) {
-        const res = await sbClient
+        const res = await supabase
           .from('team_members')
           .select('id, user_id, is_owner, password_changed')
           .eq('email', user.email?.toLowerCase() ?? '')
