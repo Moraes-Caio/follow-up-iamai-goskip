@@ -72,7 +72,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
       }
       if (!data || data.length === 0) {
         setAccessState('no-access');
-      } else if (!data[0].is_owner && !data[0].user_id) {
+      } else if (!data[0].is_owner && !data[0].password_changed) {
         setAccessState('member-setup');
       } else if (data[0].is_owner) {
         setAccessState('owner');
