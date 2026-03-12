@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTeamMembers, type TeamMemberRow } from '@/hooks/useTeamMembers';
+import { useTeamMembers, getMemberActions, type TeamMemberRow } from '@/hooks/useTeamMembers';
 import { useProfile } from '@/hooks/useProfile';
 import { useInvitations } from '@/hooks/useInvitations';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,7 +32,7 @@ import { type RolePermissions, defaultPermissions } from '@/types';
 export default function Team() {
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { teamMembers, addTeamMember, updateTeamMember, deleteTeamMember, isLoading } = useTeamMembers();
+  const { teamMembers, addTeamMember, updateTeamMember, updateMemberRole, deleteTeamMember, isLoading } = useTeamMembers();
   const { roles } = useCustomRoles();
   const { procedures, isLoading: proceduresLoading, addProcedure, updateProcedure, deleteProcedure } = useProcedures();
   const { teamMembers: allMembers } = useTeamMembers();
@@ -125,19 +125,34 @@ export default function Team() {
       return;
     }
 
-    const memberData = {
-      full_name: formData.fullName,
-      email: formData.email,
-      role_id: formData.roleIds.join(', '),
-      specialty: formData.specialty || null,
-      is_active: true,
-    };
-
     try {
       if (selectedMember) {
-        await updateTeamMember({ id: selectedMember.id, ...memberData });
+        const actions = getMemberActions(currentMember, selectedMember);
+        const newRoleId = formData.roleIds.join(', ');
+        const roleChanged = newRoleId !== selectedMember.role_id;
+
+        // If role changed, use the secure RPC
+        if (roleChanged && actions.canChangeRole) {
+          await updateMemberRole({ targetMemberId: selectedMember.id, newRoleIds: newRoleId });
+        } else if (roleChanged && !actions.canChangeRole) {
+          toast({ title: 'Erro', description: actions.reason || 'Você não tem permissão para alterar esta função.', variant: 'destructive' });
+          return;
+        }
+
+        // Update specialty if it changed (only allowed for own record or via separate logic)
+        if (formData.specialty !== (selectedMember.specialty || '')) {
+          await updateTeamMember({ id: selectedMember.id, specialty: formData.specialty || null });
+        }
+
         toast({ title: 'Sucesso', description: 'Membro atualizado com sucesso!' });
       } else {
+        const memberData = {
+          full_name: formData.fullName,
+          email: formData.email,
+          role_id: formData.roleIds.join(', '),
+          specialty: formData.specialty || null,
+          is_active: true,
+        };
         await addTeamMember(memberData);
         toast({ title: 'Sucesso', description: 'Membro adicionado com sucesso!' });
       }
@@ -548,70 +563,130 @@ export default function Team() {
       {/* Team Member Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-lg flex flex-col">
-          <DialogHeader className="shrink-0"><DialogTitle>{selectedMember ? 'Editar Membro' : 'Adicionar Membro'}</DialogTitle><DialogDescription>{selectedMember ? 'Atualize as informações do membro' : 'Adicione um membro diretamente à equipe'}</DialogDescription></DialogHeader>
-          <div className="space-y-4 p-0.5">
-            <div className="space-y-2">
-              <Label>Nome Completo *</Label>
-              <Input
-                value={selectedMember?.is_owner ? (profile?.full_name || formData.fullName) : formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                placeholder="Ex: Dr. Roberto Almeida"
-                disabled={!!selectedMember?.is_owner}
-              />
-              {selectedMember?.is_owner && (
-                <p className="text-xs text-muted-foreground">O nome do dono é gerenciado em Configurações → Conta</p>
-              )}
-            </div>
-            <div className="space-y-2"><Label>Email *</Label><Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@clinica.com" disabled={!!selectedMember?.is_owner} /></div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between"><Label>Função *</Label><button type="button" onClick={() => { setIsDialogOpen(false); setTimeout(() => setIsRolesDialogOpen(true), 100); }} className="text-xs text-primary hover:underline">Gerenciar funções</button></div>
-              <ScrollArea className="h-[120px] rounded-md border border-border bg-background">
-                <div className="space-y-1.5 p-2">
-                  {roles.map((role) => (
-                    <label key={role.id} className="flex items-center gap-2 cursor-pointer text-sm hover:bg-muted/50 rounded px-1 py-0.5">
-                      <Checkbox
-                        checked={formData.roleIds.includes(role.id)}
-                        onCheckedChange={() => toggleRole(role.id)}
-                      />
-                      <span className="flex items-center gap-1.5">
-                        <span>{role.icon || '👤'}</span>
-                        <span>{role.name}</span>
-                      </span>
-                    </label>
-                  ))}
+          <DialogHeader className="shrink-0"><DialogTitle>{selectedMember ? 'Detalhes do Membro' : 'Adicionar Membro'}</DialogTitle><DialogDescription>{selectedMember ? 'Visualize e gerencie as informações do membro' : 'Adicione um membro diretamente à equipe'}</DialogDescription></DialogHeader>
+          {(() => {
+            const actions = selectedMember ? getMemberActions(currentMember, selectedMember) : null;
+            const isSelf = selectedMember && currentMember && selectedMember.id === currentMember.id;
+            const isEditingExisting = !!selectedMember;
+
+            return (
+              <>
+                <div className="space-y-4 p-0.5">
+                  {/* Name — read-only for others, editable only for new members */}
+                  <div className="space-y-2">
+                    <Label>Nome Completo {!isEditingExisting && '*'}</Label>
+                    <Input
+                      value={isEditingExisting && selectedMember?.is_owner ? (profile?.full_name || formData.fullName) : formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      placeholder="Ex: Dr. Roberto Almeida"
+                      disabled={isEditingExisting}
+                    />
+                    {isEditingExisting && isSelf && (
+                      <p className="text-xs text-muted-foreground">Edite seu nome em Configurações → Conta</p>
+                    )}
+                    {isEditingExisting && !isSelf && (
+                      <p className="text-xs text-muted-foreground">Dados pessoais só podem ser editados pelo próprio membro</p>
+                    )}
+                  </div>
+
+                  {/* Email — read-only for existing */}
+                  <div className="space-y-2">
+                    <Label>Email {!isEditingExisting && '*'}</Label>
+                    <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@clinica.com" disabled={isEditingExisting} />
+                  </div>
+
+                  {/* Role — editable only if canChangeRole */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Função {!isEditingExisting && '*'}</Label>
+                      {(isOwner || (actions?.canChangeRole)) && (
+                        <button type="button" onClick={() => { setIsDialogOpen(false); setTimeout(() => setIsRolesDialogOpen(true), 100); }} className="text-xs text-primary hover:underline">Gerenciar funções</button>
+                      )}
+                    </div>
+                    {(!isEditingExisting || actions?.canChangeRole) ? (
+                      <ScrollArea className="h-[120px] rounded-md border border-border bg-background">
+                        <div className="space-y-1.5 p-2">
+                          {roles.map((role) => (
+                            <label key={role.id} className="flex items-center gap-2 cursor-pointer text-sm hover:bg-muted/50 rounded px-1 py-0.5">
+                              <Checkbox
+                                checked={formData.roleIds.includes(role.id)}
+                                onCheckedChange={() => toggleRole(role.id)}
+                              />
+                              <span className="flex items-center gap-1.5">
+                                <span>{role.icon || '👤'}</span>
+                                <span>{role.name}</span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    ) : (
+                      <div className="rounded-md border border-border bg-muted/30 p-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {formData.roleIds.map(rid => {
+                            const role = getRoleById(rid);
+                            return (
+                              <Badge key={rid} variant="outline" className={getRoleBadgeColor(rid)}>
+                                {role?.icon || '👤'} {role?.name || rid}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                        {actions?.reason && (
+                          <p className="text-xs text-muted-foreground mt-2">{actions.reason}</p>
+                        )}
+                      </div>
+                    )}
+                    {formData.roleIds.length > 0 && actions?.canChangeRole && (
+                      <p className="text-xs text-muted-foreground">{formData.roleIds.length} função(ões) selecionada(s)</p>
+                    )}
+                  </div>
+
+                  {/* Specialty — read-only for others */}
+                  <div className="space-y-2">
+                    <Label>Especialidades</Label>
+                    <Input
+                      value={formData.specialty}
+                      onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                      placeholder="Especialidades"
+                      disabled={isEditingExisting && !isSelf}
+                    />
+                  </div>
+
+                  {/* Owner badge info */}
+                  {selectedMember?.is_owner && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
+                      <Crown className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                      <p className="text-sm text-warning-foreground">Este membro é o dono do workspace. Esta condição não pode ser alterada.</p>
+                    </div>
+                  )}
                 </div>
-              </ScrollArea>
-              {formData.roleIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">{formData.roleIds.length} função(ões) selecionada(s)</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Especialidades</Label>
-              <Input
-                value={formData.specialty}
-                onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                placeholder="Especialidades"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <div className="flex w-full justify-between">
-              <div>
-                {selectedMember && !selectedMember.is_owner && (
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => {
-                    setMemberToDelete(selectedMember);
-                    setIsDeleteDialogOpen(true);
-                  }}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />Remover
-                  </Button>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleCloseDialog}>Cancelar</Button>
-                <Button onClick={handleSubmit}>{selectedMember ? 'Salvar' : 'Adicionar'}</Button>
-              </div>
-            </div>
-          </DialogFooter>
+
+                <DialogFooter>
+                  <div className="flex w-full justify-between">
+                    <div>
+                      {selectedMember && actions?.canRemove && (
+                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => {
+                          setMemberToDelete(selectedMember);
+                          setIsDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />Remover
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={handleCloseDialog}>
+                        {isEditingExisting && !actions?.canChangeRole ? 'Fechar' : 'Cancelar'}
+                      </Button>
+                      {(!isEditingExisting || actions?.canChangeRole) && (
+                        <Button onClick={handleSubmit}>{selectedMember ? 'Salvar' : 'Adicionar'}</Button>
+                      )}
+                    </div>
+                  </div>
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
