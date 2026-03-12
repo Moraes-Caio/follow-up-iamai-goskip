@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -35,14 +35,13 @@ export function PermissionsDialog({
   const [localPermissions, setLocalPermissions] = useState<RolePermissions>({ ...permissions });
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sync when dialog opens
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
+  // Sync permissions from parent whenever the dialog opens or permissions prop changes
+  useEffect(() => {
+    if (open) {
       setLocalPermissions({ ...permissions });
       setSearchQuery('');
     }
-    onOpenChange(isOpen);
-  };
+  }, [open, permissions]);
 
   // Count only configurable permissions (not base ones)
   const totalEnabled = configurableKeys.filter(k => localPermissions[k]).length;
@@ -106,7 +105,7 @@ export function PermissionsDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* Compact Header */}
         <div className="px-5 pt-4 pb-3 border-b border-border shrink-0">
