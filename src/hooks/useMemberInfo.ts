@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   type RolePermissions,
   defaultPermissions,
-  defaultRolePermissions,
   basePermissionKeys,
   applyBasePermissions,
   mergePermissions,
@@ -31,20 +30,6 @@ export interface RoleInfo {
   color: string | null;
   icon: string | null;
 }
-
-// Default role display names
-const defaultRoleNames: Record<string, string> = {
-  admin: 'Administrador',
-  dentist: 'Dentista',
-  receptionist: 'Recepcionista',
-};
-
-// Default role visual info
-const defaultRoleVisuals: Record<string, { color: string; icon: string }> = {
-  admin: { color: '#3b82f6', icon: '👨‍💼' },
-  dentist: { color: '#10b981', icon: '👨‍⚕️' },
-  receptionist: { color: '#f59e0b', icon: '📋' },
-};
 
 export function useMemberInfo() {
   const { user } = useAuth();
@@ -104,41 +89,22 @@ export function useMemberInfo() {
         return { roles: [], merged: applyBasePermissions({ ...defaultPermissions }) };
       }
 
+      // Fetch ALL roles (default + custom) from DB in a single query
+      const { data } = await supabase
+        .from('custom_roles')
+        .select('id, name, permissions, color, icon')
+        .in('id', roleIds);
+
       const resolvedRoles: RoleInfo[] = [];
-      const customRoleIds: string[] = [];
-
-      // Separate default roles from custom (UUID) roles
-      for (const rid of roleIds) {
-        if (defaultRoleNames[rid]) {
+      if (data) {
+        for (const row of data) {
           resolvedRoles.push({
-            id: rid,
-            name: defaultRoleNames[rid],
-            permissions: defaultRolePermissions[rid],
-            color: defaultRoleVisuals[rid]?.color ?? null,
-            icon: defaultRoleVisuals[rid]?.icon ?? null,
+            id: row.id,
+            name: row.name,
+            permissions: row.permissions as unknown as RolePermissions,
+            color: row.color,
+            icon: row.icon,
           });
-        } else {
-          customRoleIds.push(rid);
-        }
-      }
-
-      // Fetch custom roles from DB in a single query
-      if (customRoleIds.length > 0) {
-        const { data } = await supabase
-          .from('custom_roles')
-          .select('id, name, permissions, color, icon')
-          .in('id', customRoleIds);
-
-        if (data) {
-          for (const row of data) {
-            resolvedRoles.push({
-              id: row.id,
-              name: row.name,
-              permissions: row.permissions as unknown as RolePermissions,
-              color: row.color,
-              icon: row.icon,
-            });
-          }
         }
       }
 
