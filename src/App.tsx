@@ -55,7 +55,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
     (async () => {
       let { data } = await supabase
         .from('team_members')
-        .select('id, user_id, is_owner, password_changed')
+        .select('id, user_id, is_owner, setup_completed')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .limit(1);
@@ -63,7 +63,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
       if (!data || data.length === 0) {
         const res = await supabase
           .from('team_members')
-          .select('id, user_id, is_owner, password_changed')
+          .select('id, user_id, is_owner, setup_completed')
           .eq('email', user.email?.toLowerCase() ?? '')
           .eq('is_active', true)
           .limit(1);
@@ -72,7 +72,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
       }
       if (!data || data.length === 0) {
         setAccessState('no-access');
-      } else if (!data[0].is_owner && !data[0].password_changed) {
+      } else if (!data[0].is_owner && !data[0].setup_completed) {
         setAccessState('member-setup');
       } else if (data[0].is_owner) {
         setAccessState('owner');
