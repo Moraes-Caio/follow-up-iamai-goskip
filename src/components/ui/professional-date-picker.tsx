@@ -53,6 +53,84 @@ export interface ProfessionalDatePickerProps {
   error?: boolean;
 }
 
+/** Internal dropdown that closes on outside click without blocking scroll */
+function DropdownSelect({
+  isOpen,
+  onToggle,
+  onClose,
+  triggerLabel,
+  triggerWidth,
+  dropdownWidth,
+  children,
+}: {
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  triggerLabel: string;
+  triggerWidth: string;
+  dropdownWidth: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Close on click outside — uses mousedown so we don't block scroll events
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
+  // Auto-scroll to selected item when dropdown opens
+  useEffect(() => {
+    if (isOpen && listRef.current) {
+      const selected = listRef.current.querySelector('[data-selected="true"]');
+      if (selected) {
+        selected.scrollIntoView({ block: "center" });
+      }
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        className={cn(
+          "flex h-8 items-center justify-between rounded-md border border-input bg-muted/50 px-3 py-2 text-sm focus:outline-none hover:bg-muted font-medium",
+          triggerWidth
+        )}
+        onClick={onToggle}
+      >
+        {triggerLabel}
+        <ChevronDown className="h-4 w-4 opacity-50" />
+      </button>
+      {isOpen && (
+        <div
+          className={cn(
+            "absolute top-full left-0 mt-1 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95",
+            dropdownWidth
+          )}
+          style={{ zIndex: 50 }}
+        >
+          <div
+            ref={listRef}
+            className="max-h-[200px] overflow-y-auto overscroll-contain p-1"
+            onTouchMove={(e) => e.stopPropagation()}
+            onWheel={(e) => e.stopPropagation()}
+          >
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProfessionalDatePicker({
   value,
   onChange,
@@ -270,7 +348,7 @@ export function ProfessionalDatePicker({
           }}
           onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         >
-          <div className="px-4 pt-3 pb-1 relative" style={{ zIndex: 10000 }}>
+          <div className="px-4 pt-3 pb-1 relative">
             <input
               ref={inputRef}
               type="text"
@@ -289,97 +367,66 @@ export function ProfessionalDatePicker({
           </div>
 
           <div ref={containerRef} className="relative" style={{ minWidth: "320px" }}>
-            {(isMonthOpen || isYearOpen) && (
-              <div
-                className="fixed inset-0 bg-transparent"
-                style={{ zIndex: 9999 }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsMonthOpen(false);
-                  setIsYearOpen(false);
-                }}
-              />
-            )}
-
             {/* Header */}
-            <div className="relative flex items-center justify-between gap-2 p-4 pb-2 border-b border-border" style={{ zIndex: 10000 }}>
+            <div className="relative flex items-center justify-between gap-2 p-4 pb-2 border-b border-border" style={{ zIndex: 10 }}>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handlePrevMonth} disabled={isPrevDisabled}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
               <div className="flex items-center gap-2">
                 {/* Month Selector */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    className="flex h-8 w-[120px] items-center justify-between rounded-md border border-input bg-muted/50 px-3 py-2 text-sm focus:outline-none hover:bg-muted font-medium"
-                    onClick={() => { setIsMonthOpen(!isMonthOpen); setIsYearOpen(false); }}
-                  >
-                    {availableMonths.find(m => m.index === getMonth(currentMonth))?.name || "Mês"}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </button>
-                  {isMonthOpen && (
+                <DropdownSelect
+                  isOpen={isMonthOpen}
+                  onToggle={() => { setIsMonthOpen(!isMonthOpen); setIsYearOpen(false); }}
+                  onClose={() => setIsMonthOpen(false)}
+                  triggerLabel={availableMonths.find(m => m.index === getMonth(currentMonth))?.name || "Mês"}
+                  triggerWidth="w-[120px]"
+                  dropdownWidth="w-[120px]"
+                >
+                  {availableMonths.map(({ name, index }) => (
                     <div
-                      className="absolute top-full left-0 mt-1 w-[120px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
-                      style={{ zIndex: 10000 }}
+                      key={index}
+                      data-selected={index === getMonth(currentMonth) ? "true" : undefined}
+                      className={cn(
+                        "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                        index === getMonth(currentMonth) && "bg-accent text-accent-foreground font-medium"
+                      )}
+                      onClick={() => {
+                        handleMonthChange(index.toString());
+                        setIsMonthOpen(false);
+                      }}
                     >
-                      <div className="max-h-[250px] overflow-y-auto overflow-x-hidden p-1">
-                        {availableMonths.map(({ name, index }) => (
-                          <div
-                            key={index}
-                            className={cn(
-                              "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                              index === getMonth(currentMonth) && "bg-accent text-accent-foreground font-medium"
-                            )}
-                            onClick={() => {
-                              handleMonthChange(index.toString());
-                              setIsMonthOpen(false);
-                            }}
-                          >
-                            {name}
-                          </div>
-                        ))}
-                      </div>
+                      {name}
                     </div>
-                  )}
-                </div>
+                  ))}
+                </DropdownSelect>
 
                 {/* Year Selector */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    className="flex h-8 w-[90px] items-center justify-between rounded-md border border-input bg-muted/50 px-3 py-2 text-sm focus:outline-none hover:bg-muted font-medium"
-                    onClick={() => { setIsYearOpen(!isYearOpen); setIsMonthOpen(false); }}
-                  >
-                    {getYear(currentMonth)}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </button>
-                  {isYearOpen && (
+                <DropdownSelect
+                  isOpen={isYearOpen}
+                  onToggle={() => { setIsYearOpen(!isYearOpen); setIsMonthOpen(false); }}
+                  onClose={() => setIsYearOpen(false)}
+                  triggerLabel={String(getYear(currentMonth))}
+                  triggerWidth="w-[90px]"
+                  dropdownWidth="w-[90px]"
+                >
+                  {years.map((year) => (
                     <div
-                      className="absolute top-full left-0 mt-1 w-[90px] rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95"
-                      style={{ zIndex: 10000 }}
+                      key={year}
+                      data-selected={year === getYear(currentMonth) ? "true" : undefined}
+                      className={cn(
+                        "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                        year === getYear(currentMonth) && "bg-accent text-accent-foreground font-medium"
+                      )}
+                      onClick={() => {
+                        handleYearChange(year.toString());
+                        setIsYearOpen(false);
+                      }}
                     >
-                      <div className="max-h-[250px] overflow-y-auto overflow-x-hidden p-1">
-                        {years.map((year) => (
-                          <div
-                            key={year}
-                            className={cn(
-                              "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                              year === getYear(currentMonth) && "bg-accent text-accent-foreground font-medium"
-                            )}
-                            onClick={() => {
-                              handleYearChange(year.toString());
-                              setIsYearOpen(false);
-                            }}
-                          >
-                            {year}
-                          </div>
-                        ))}
-                      </div>
+                      {year}
                     </div>
-                  )}
-                </div>
+                  ))}
+                </DropdownSelect>
               </div>
 
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handleNextMonth} disabled={isNextDisabled}>
