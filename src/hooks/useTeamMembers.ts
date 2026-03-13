@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import type { Database } from '@/integrations/supabase/types';
+import type { CustomRoleRow } from '@/hooks/useCustomRoles';
 
 type TeamMemberRow = Database['public']['Tables']['team_members']['Row'];
 type TeamMemberInsert = Database['public']['Tables']['team_members']['Insert'];
@@ -12,9 +13,14 @@ export type { TeamMemberRow };
 
 // ===== Permission helper: who can do what to whom =====
 
-function memberHasAdmin(member: TeamMemberRow): boolean {
+/** Check if a member has the "Administrador" role by looking up their role_ids in the roles list */
+function memberIsAdmin(member: TeamMemberRow, roles: CustomRoleRow[]): boolean {
   if (!member.role_id) return false;
-  return member.role_id.split(',').some(r => r.trim() === 'admin');
+  const memberRoleIds = member.role_id.split(',').map(r => r.trim()).filter(Boolean);
+  return memberRoleIds.some(rid => {
+    const role = roles.find(r => r.id === rid);
+    return role?.name === 'Administrador' && role?.is_default === true;
+  });
 }
 
 export interface MemberAction {
@@ -24,25 +30,26 @@ export interface MemberAction {
 }
 
 /**
- * Given the current user's team_member and a target member,
+ * Given the current user's team_member, a target member, and the roles list,
  * returns what actions the current user can perform.
  */
 export function getMemberActions(
   currentMember: TeamMemberRow | undefined,
-  targetMember: TeamMemberRow
+  targetMember: TeamMemberRow,
+  roles: CustomRoleRow[] = []
 ): MemberAction {
   if (!currentMember) return { canChangeRole: false, canRemove: false };
 
   const isSelf = currentMember.id === targetMember.id;
   const callerIsOwner = currentMember.is_owner ?? false;
   const targetIsOwner = targetMember.is_owner ?? false;
-  const callerIsAdmin = memberHasAdmin(currentMember);
-  const targetIsAdmin = memberHasAdmin(targetMember);
+  const callerIsAdmin = memberIsAdmin(currentMember, roles);
+  const targetIsAdmin = memberIsAdmin(targetMember, roles);
 
   // Owner can never be removed
   if (targetIsOwner) {
     return {
-      canChangeRole: callerIsOwner, // owner can change own role
+      canChangeRole: callerIsOwner,
       canRemove: false,
       reason: 'O dono do workspace não pode ser removido.',
     };
@@ -68,6 +75,11 @@ export function getMemberActions(
 
   // Regular member: no permissions
   return { canChangeRole: false, canRemove: false, reason: 'Você não tem permissão para esta ação.' };
+}
+
+/** Find the admin role from a roles list */
+export function findAdminRole(roles: CustomRoleRow[]): CustomRoleRow | undefined {
+  return roles.find(r => r.name === 'Administrador' && r.is_default === true);
 }
 
 // ===== Hook =====
@@ -100,7 +112,6 @@ export function useTeamMembers() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['team_members'] }),
   });
 
-  // Personal data update (name, phone, specialty) — only own record via RLS
   const updateTeamMember = useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & TeamMemberUpdate) => {
       const { error } = await supabase
@@ -112,7 +123,6 @@ export function useTeamMembers() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['team_members'] }),
   });
 
-  // Role change — goes through the secure RPC
   const updateMemberRole = useMutation({
     mutationFn: async ({ targetMemberId, newRoleIds }: { targetMemberId: string; newRoleIds: string }) => {
       const { data, error } = await (supabase.rpc as any)('update_member_role', {
@@ -126,7 +136,6 @@ export function useTeamMembers() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['team_members'] }),
   });
 
-  // Member removal — goes through the secure RPC
   const removeMember = useMutation({
     mutationFn: async (targetMemberId: string) => {
       const { data, error } = await (supabase.rpc as any)('remove_team_member', {
@@ -139,7 +148,6 @@ export function useTeamMembers() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['team_members'] }),
   });
 
-  // Backwards-compatible deleteTeamMember that uses the RPC
   const deleteTeamMember = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await (supabase.rpc as any)('remove_team_member', {
