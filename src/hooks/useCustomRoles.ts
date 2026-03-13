@@ -8,9 +8,6 @@ type CustomRoleRow = Database['public']['Tables']['custom_roles']['Row'];
 
 export type { CustomRoleRow };
 
-// IDs of default roles that cannot be deleted (but CAN be edited)
-const DEFAULT_ROLE_IDS = ['admin', 'dentist', 'receptionist'];
-
 export function useCustomRoles() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -71,8 +68,9 @@ export function useCustomRoles() {
 
   const deleteRole = useMutation({
     mutationFn: async (id: string) => {
-      // Default roles cannot be deleted
-      if (DEFAULT_ROLE_IDS.includes(id)) return;
+      // Default roles cannot be deleted — check by is_default flag
+      const role = (query.data || []).find(r => r.id === id);
+      if (role?.is_default) return;
       const { error } = await supabase
         .from('custom_roles')
         .delete()
