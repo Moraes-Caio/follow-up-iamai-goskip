@@ -30,6 +30,7 @@ import { formatDate, cn } from '@/lib/utils';
 import { Plus, Calendar as CalendarIcon, Clock, User, Stethoscope, Undo2, Pencil, Loader2, ChevronDown, Check, Search, Settings, X, Eye, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CreatePatientDialog } from '@/components/patients/CreatePatientDialog';
+import { useMemberInfo } from '@/hooks/useMemberInfo';
 import { 
   addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, 
   parseISO, format, isBefore, startOfDay, addYears, endOfYear,
@@ -61,6 +62,11 @@ export default function Appointments() {
   const { addNotification } = useNotifications();
   const { user } = useAuth();
   const { getClinicHoursForDate } = useClinicHours();
+  const { hasPermission, isOwner } = useMemberInfo();
+  const canCreate = isOwner || hasPermission('createAppointments');
+  const canEdit = isOwner || hasPermission('editAppointments');
+  const canCancel = isOwner || hasPermission('cancelAppointments');
+  const canConfirm = isOwner || hasPermission('confirmAppointments');
 
   const [searchParams] = useSearchParams();
   const tabMap: Record<string, string> = { hoje: 'today', semana: 'week', mes: 'month', todas: 'all', calendario: 'calendar' };
@@ -550,7 +556,7 @@ export default function Appointments() {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div><h1 className="text-2xl font-bold text-foreground lg:text-3xl">Consultas</h1><p className="text-muted-foreground">Gerencie o agendamento de consultas</p></div>
-          <Button onClick={() => handleOpenDialog()} className="gap-2"><Plus className="h-4 w-4" />Agendar Consulta</Button>
+          {canCreate && <Button onClick={() => handleOpenDialog()} className="gap-2"><Plus className="h-4 w-4" />Agendar Consulta</Button>}
         </div>
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -617,8 +623,8 @@ export default function Appointments() {
                                     </div>
                                   </div>
                                   <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                    {appointment.status === 'pending' && !undoableAppointments[appointment.id] && !needsConfirmation && (<Button variant="outline" size="sm" onClick={() => handleConfirmAppointment(appointment)}>Confirmar</Button>)}
-                                    {appointment.status === 'cancelled' && (
+                                    {canConfirm && appointment.status === 'pending' && !undoableAppointments[appointment.id] && !needsConfirmation && (<Button variant="outline" size="sm" onClick={() => handleConfirmAppointment(appointment)}>Confirmar</Button>)}
+                                    {canCancel && appointment.status === 'cancelled' && (
                                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" title="Excluir consulta" onClick={() => { setDeleteTargetId(appointment.id); setIsDeleteDialogOpen(true); }}>
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
@@ -896,12 +902,16 @@ export default function Appointments() {
 
                 {isEditable && (
                   <div className="flex gap-2">
-                    <Button className="flex-1 gap-2" variant="outline" onClick={handleEditFromDetail}>
-                      <Pencil className="h-4 w-4" />Editar / Reagendar
-                    </Button>
-                    <Button className="flex-1 gap-2" variant="destructive" onClick={() => setIsCancelDialogOpen(true)}>
-                      <X className="h-4 w-4" />Cancelar Consulta
-                    </Button>
+                    {canEdit && (
+                      <Button className="flex-1 gap-2" variant="outline" onClick={handleEditFromDetail}>
+                        <Pencil className="h-4 w-4" />Editar / Reagendar
+                      </Button>
+                    )}
+                    {canCancel && (
+                      <Button className="flex-1 gap-2" variant="destructive" onClick={() => setIsCancelDialogOpen(true)}>
+                        <X className="h-4 w-4" />Cancelar Consulta
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
